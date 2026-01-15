@@ -6,7 +6,7 @@ const auth = require("../middleware/auth.middleware");
 // 🔍 Search books (Google Books API) - PUBLIC
 router.get("/search", async (req, res) => {
   try {
-    const { q } = req.query;
+    const { q, orderBy = 'relevance' } = req.query;
     if (!q) return res.status(400).json({ error: "Query missing" });
 
     const response = await axios.get(
@@ -14,6 +14,8 @@ router.get("/search", async (req, res) => {
       {
         params: {
           q,
+          maxResults: 12,
+          orderBy,
           key: process.env.GOOGLE_BOOKS_API_KEY,
         },
       }

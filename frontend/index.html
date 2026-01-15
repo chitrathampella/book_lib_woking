@@ -2,198 +2,559 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Book Explorer Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>  BOOKLIB - Premium Dashboard</title>
+    <link rel="icon" type="image/png" href="logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        :root { --primary: #3498db; --amazon: #FF9900; --bg: #f8f9fa; }
-        body { font-family: 'Inter', sans-serif; margin: 0; background: var(--bg); height: 100vh; overflow: hidden; }
+        :root {
+            --bg: #050505; 
+            --panel: #0f0f0f;
+            --nav: #000000;
+            --text: #ffffff;
+            --text-dim: #a0a0a0;
+            --border: #1f1f1f;
+            --card-bg: #121212;
+            --primary: #6366f1; /* Premium Indigo */
+            --accent: #10b981;  /* Emerald Mint */
+        }
+
+        [data-theme="light"] {
+            --bg: #ffffff; 
+            --panel: #f8f9fa;
+            --nav: #ffffff;
+            --text: #000000;
+            --text-dim: #666666;
+            --border: #e0e0e0;
+            --card-bg: #ffffff;
+            --primary: #6366f1; /* Keep same */
+            --accent: #10b981;  /* Keep same */
+        }
+
+        [data-theme="light"] .desc-text {
+            color: #333333;
+        }
+
+        * { box-sizing: border-box; transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
+        body { font-family: 'Poppins', sans-serif; margin: 0; background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; }
         
-        /* The "Spread" Layout Container */
         .app-container {
             display: grid;
-            grid-template-columns: 350px 1fr 400px; /* 3 Columns */
+            grid-template-columns: 1fr 0px; 
+            grid-template-rows: 90px 110px 1fr auto;
             height: 100vh;
+            min-height: 100vh;
         }
+        .app-container.sidebar-open { grid-template-columns: 1fr 420px; }
 
-        /* Left Column: Search */
-        .sidebar-left {
-            background: white; border-right: 1px solid #ddd; padding: 20px;
-            overflow-y: auto; display: flex; flex-direction: column;
+        /* Top Nav */
+        .top-nav {
+            grid-column: 1 / -1; display: flex; align-items: center; padding: 0 50px;
+            background: var(--nav); border-bottom: 1px solid var(--border);
         }
+        .logo { font-size: 28px; font-weight: 700; letter-spacing: 4px; cursor: pointer; color: var(--text); }
 
-        /* Center Column: Book Details */
-        .main-content {
-            padding: 40px; overflow-y: auto; background: white;
-            display: flex; flex-direction: column; align-items: center; text-align: center;
+        .search-bar { 
+            margin-left: 60px; display: flex; background: var(--card-bg); border-radius: 16px; 
+            padding: 12px 25px; width: 500px; align-items: center; border: 1px solid var(--border);
         }
+        .search-bar input { background: transparent; border: none; outline: none; width: 100%; color: var(--text); font-size: 16px; padding-left: 12px; }
 
-        /* Right Column: Forum */
-        .sidebar-right {
-            background: #fff; border-left: 1px solid #ddd; padding: 20px;
-            overflow-y: auto; display: flex; flex-direction: column;
+        /* Secondary Nav */
+        .secondary-nav {
+            grid-column: 1 / -1; background: var(--nav); border-bottom: 1px solid var(--border);
+            display: flex; flex-direction: column; justify-content: center; padding: 0 50px;
         }
+        .nav-tabs { display: flex; gap: 40px; margin-bottom: 15px; }
+        .tab { cursor: pointer; color: var(--text-dim); font-size: 18px; font-weight: 600; padding-bottom: 8px; border-bottom: 3px solid transparent; }
+        .tab:hover { color: var(--text); }
+        .tab.active { color: var(--primary); border-bottom-color: var(--primary); }
 
-        /* UI Components */
-        .search-box { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 15px; box-sizing: border-box;}
+        .genre-bar { display: flex; gap: 15px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none; }
+        .genre-chip { 
+            background: var(--card-bg); border: 1px solid var(--border); padding: 8px 22px; 
+            border-radius: 25px; font-size: 14px; color: var(--text-dim); cursor: pointer; white-space: nowrap; font-weight: 500;
+        }
+        .genre-chip:hover { border-color: var(--primary); color: var(--text); background: #1a1a1a; }
+
+        /* Main Content */
+        .main-content { padding: 40px 50px; overflow-y: auto; scroll-behavior: smooth; }
+        .popular-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 35px; }
         
-        .book-result { 
-            display: flex; gap: 10px; padding: 10px; margin-bottom: 10px; 
-            cursor: pointer; border-radius: 8px; transition: 0.2s; border: 1px solid transparent;
-        }
-        .book-result:hover { background: #f0f7ff; border-color: var(--primary); }
-        .book-result img { width: 50px; height: 75px; border-radius: 4px; object-fit: cover; }
+        .book-card { cursor: pointer; background: var(--card-bg); border: 1px solid var(--border); border-radius: 18px; padding: 15px; }
+        .book-card:hover { transform: translateY(-8px); border-color: var(--primary); box-shadow: 0 15px 30px rgba(0,0,0,0.4); }
+        .book-card img { width: 100%; border-radius: 12px; aspect-ratio: 2/3; object-fit: cover; }
+        .book-card .title { font-size: 15px; font-weight: 600; margin-top: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-        .amazon-btn {
-            background: var(--amazon); color: black; padding: 15px 30px;
-            text-decoration: none; border-radius: 50px; font-weight: bold;
-            margin: 20px 0; border: 1px solid #a88734; display: inline-block;
+        /* Detail View UI */
+        .detail-title { font-size: 48px; font-weight: 800; line-height: 1.1; margin: 0; letter-spacing: -1px; }
+        .detail-author { font-size: 20px; color: var(--text-dim); margin-bottom: 25px; }
+        
+        .meta-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 20px; margin: 30px 0; }
+        .meta-item { background: #0a0a0a; border: 1px solid #222; padding: 15px; border-radius: 15px; }
+        .meta-label { font-size: 11px; text-transform: uppercase; color: var(--primary); font-weight: 700; letter-spacing: 1px; margin-bottom: 5px; }
+        .meta-value { font-size: 14px; font-weight: 600; color: #fff; }
+
+        .desc-container { 
+            background: rgba(255,255,255,0.03); padding: 25px; border-radius: 20px; 
+            border: 1px solid var(--border); line-height: 1.8; margin: 25px 0; max-width: 850px;
+        }
+        .desc-text { 
+            font-size: 15px; color: #e0e0e0; overflow: hidden; max-height: 120px; 
+            position: relative; transition: max-height 0.6s ease;
+        }
+        .desc-text.expanded { max-height: 2500px; }
+        
+        .read-more-btn { color: var(--primary); cursor: pointer; font-size: 13px; font-weight: 700; margin-top: 15px; display: inline-block; }
+
+        .action-row { display: flex; gap: 20px; margin-top: 30px; padding-bottom: 80px; flex-wrap: wrap; }
+        .btn-main { padding: 14px 35px; border-radius: 14px; border: none; cursor: pointer; font-weight: 700; font-size: 15px; }
+        .btn-fav { background: white; color: black; }
+        .btn-amazon { background: var(--primary); color: white; text-decoration: none; }
+        .btn-google { background: #4285f4; color: white; text-decoration: none; }
+        .btn-bn { background: #2e8540; color: white; text-decoration: none; }
+        .btn-apple { background: #000000; color: white; text-decoration: none; }
+
+        .reference-row { display: flex; gap: 15px; margin-top: 15px; flex-wrap: wrap; }
+        .btn-secondary { padding: 10px 20px; border-radius: 10px; border: 1px solid var(--border); cursor: pointer; font-weight: 600; font-size: 13px; text-decoration: none; color: var(--text); background: var(--card-bg); transition: all 0.3s; }
+        .btn-secondary:hover { background: var(--text); color: var(--bg); }
+        .btn-wiki { background: var(--card-bg); color: var(--text); border-color: var(--border); }
+        .btn-gutenberg { background: var(--card-bg); color: var(--text); border-color: var(--border); }
+        .btn-ol { background: var(--card-bg); color: var(--text); border-color: var(--border); }
+
+        /* Comments */
+        .sidebar-right { background: var(--panel); border-left: 1px solid var(--border); padding: 30px; display: none; flex-direction: column; }
+        .comment-node { border-left: 2px solid #222; padding-left: 15px; margin-bottom: 20px; }
+        .user-tag { font-size: 12px; font-weight: 700; color: var(--primary); }
+        .vote-arrow { cursor: pointer; font-size: 18px; color: var(--text-dim); }
+        .vote-arrow:hover { color: var(--primary); }
+        .vote-arrow.voted { color: var(--primary); opacity: 0.7; }
+
+        .loader { width: 40px; height: 40px; border: 4px solid #111; border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s infinite linear; margin: 40px auto; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Footer */
+        .app-footer {
+            grid-column: 1 / -1;
+            background: var(--nav);
+            border-top: 1px solid var(--border);
+            padding: 6px 20px;
+        }
+        .footer-content {
+            text-align: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .footer-content p {
+            color: var(--text-dim);
+            font-size: 9px;
+            margin: 0;
+            line-height: 1.4;
         }
 
-        .rating-hero { font-size: 72px; font-weight: 800; color: #f1c40f; margin: 0; }
-        
-        .review-card {
-            background: #f9f9f9; padding: 15px; border-radius: 10px;
-            margin-bottom: 15px; font-size: 14px; border: 1px solid #eee;
-        }
-        
-        .stars { color: #f1c40f; font-size: 18px; }
-        
-        /* Form Styling */
-        .post-box { background: #eef2f3; padding: 15px; border-radius: 10px; margin-top: auto; }
-        textarea { width: 100%; height: 60px; margin: 10px 0; border-radius: 5px; border: 1px solid #ccc; padding: 5px; box-sizing: border-box;}
+        .auth-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(10px); }
+        .auth-card { background: var(--panel); padding: 40px; border-radius: 24px; width: 400px; border: 1px solid var(--border); text-align: center; }
+        .input-box { width: 100%; padding: 15px; margin-bottom: 15px; background: var(--card-bg); border: 1px solid var(--border); color: var(--text); border-radius: 12px; }
     </style>
 </head>
 <body>
 
-<div class="app-container">
-    
-    <aside class="sidebar-left">
-        <h2>📚 Books</h2>
-        <input type="text" id="search-input" class="search-box" placeholder="Search for books...">
-        <button onclick="searchBooks()" style="width:100%; padding:10px; background:var(--primary); color:white; border:none; border-radius:8px; cursor:pointer;">Search</button>
-        <div id="search-results" style="margin-top:20px;"></div>
-    </aside>
-
-    <main class="main-content">
-        <div id="detail-view" style="display:none; max-width: 600px;">
-            <img id="main-cover" src="" style="width: 200px; border-radius: 10px; shadow: 0 10px 20px rgba(0,0,0,0.2);">
-            <h1 id="main-title">Book Title</h1>
-            <p id="main-author" style="color: #666; font-weight: bold;"></p>
-            <div id="amazon-container"></div>
-            <p id="main-desc" style="line-height: 1.8; color: #444; text-align: justify;"></p>
-        </div>
-        <div id="empty-state">
-            <h1>Select a book to start</h1>
-        </div>
-    </main>
-
-    <aside class="sidebar-right">
-        <h2>Community</h2>
-        <div style="text-align: center; padding: 20px 0;">
-            <div class="rating-hero" id="avg-rating">0.0</div>
-            <p id="total-reviews" style="color:#777;">0 reviews</p>
-        </div>
-        
-        <div id="reviews-container" style="flex: 1;">
-            </div>
-
-        <div class="post-box" id="post-box" style="display:none;">
-            <h4>Write a Review</h4>
-            <input type="number" id="rev-rating" min="1" max="5" placeholder="Rating (1-5)">
-            <textarea id="rev-comment" placeholder="Your thoughts..."></textarea>
-            <button onclick="submitReview()" style="width:100%; padding:10px; background:#27ae60; color:white; border:none; cursor:pointer; border-radius:5px;">Post</button>
-        </div>
-    </aside>
+<div id="authModal" class="auth-modal" onclick="closeAllPopups()">
+    <div class="auth-card" onclick="event.stopPropagation()">
+        <h2 id="authTitle" style="margin-bottom:30px">Enter BookLib</h2>
+        <input type="email" id="authEmail" class="input-box" placeholder="Email Address">
+        <input type="password" id="authPass" class="input-box" placeholder="Password">
+        <button class="btn-main btn-amazon" style="width:100%" onclick="handleAuth()">Continue</button>
+        <p style="font-size:12px; color:gray; margin-top:20px; cursor:pointer" onclick="toggleAuthMode()">Switch Login/Signup</p>
+    </div>
 </div>
 
+<div class="app-container" id="app">
+    <header class="top-nav">
+        <div class="logo" onclick="switchTab('home')">
+            <img src="logo.png" alt="BookLib Logo" style="height: 32px; margin-right: 8px; border-radius: 4px;">
+            BOOKLIB
+        </div>
+        <div class="search-bar">
+            
+            <input type="text" id="search-input" placeholder="Search title, author or genre..." onkeydown="if(event.key === 'Enter') performSearch()">
+       <span>🔍</span>
+        </div>
+        <div style="margin-left:auto; display:flex; align-items:center; gap:20px" id="auth-ui">
+            <button id="theme-toggle" class="btn-main btn-fav" style="padding:10px 15px; font-size:14px" onclick="toggleTheme()"> Dark</button>
+            <button class="btn-main btn-fav" style="padding:10px 25px" onclick="openAuth(event)">Login</button>
+        </div>
+    </header>
 
+    <div class="secondary-nav">
+        <nav class="nav-tabs">
+            <div class="tab active" data-tab="home" onclick="switchTab('home')">Explore</div>
+            <div class="tab" data-tab="mybooks" id="tab-mybooks" style="display:none" onclick="switchTab('mybooks')">Library</div>
+            <div class="tab" data-tab="favorites" id="tab-favorites" style="display:none" onclick="switchTab('favorites')">Favorites</div>
+        </nav>
+        <div class="genre-bar">
+            <div class="genre-chip" onclick="performSearch('subject:Fantasy')">Fantasy</div>
+            <div class="genre-chip" onclick="performSearch('subject:Mystery')">Mystery</div>
+            <div class="genre-chip" onclick="performSearch('subject:Fiction')">Fiction</div>
+            <div class="genre-chip" onclick="performSearch('subject:History')">History</div>
+            <div class="genre-chip" onclick="performSearch('subject:Romance')">Romance</div>
+            <div class="genre-chip" onclick="performSearch('subject:Science')">Science</div>
+            <div class="genre-chip" onclick="performSearch('subject:Art')">Art</div>
+        </div>
+    </div>
 
+    <main class="main-content" id="main-view">  
+        <div id="dynamic-content"></div>
+    </main>
+
+    <aside class="sidebar-right" id="right-panel">
+        <h2 style="margin-top:0; font-size:24px">Discussion</h2>
+        <div id="comment-thread" style="flex:1; overflow-y:auto;"></div>
+        <div style="margin-top:20px; background:var(--card-bg); padding:20px; border-radius:15px">
+            <textarea id="comment-input" placeholder="Share your thoughts..." style="width:100%; background:transparent; border:none; color:white; font-size:14px; height:60px; resize:none; outline:none"></textarea>
+            <button onclick="postComment()" style="width:100%; margin-top:15px; padding:12px; background:var(--primary); color:white; border:none; border-radius:10px; font-weight:700; cursor:pointer;">Post Comment</button>
+        </div>
+    </aside>
+
+    <footer class="app-footer">
+        <div class="footer-content">
+            <p>© 2026 BookLib. All rights reserved. | Powered by Google Books API</p>
+        </div>
+    </footer>
+</div>
 <script>
-    let currentBookId = "";
+    const API_BASE = 'http://localhost:5001';
+    const GOOGLE_API = 'https://www.googleapis.com/books/v1/volumes';
+    
+    let user = JSON.parse(localStorage.getItem('bl_user')) || null;
+    let token = localStorage.getItem('bl_token') || 'mock-token';
+    let currentBook = null;
+    let authMode = 'login';
 
-    async function searchBooks() {
-        const query = document.getElementById('search-input').value;
-        const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${query}`);
-        const data = await response.json();
-        const resultsDiv = document.getElementById('search-results');
-        resultsDiv.innerHTML = "";
+    window.onload = () => {
+        loadTheme();
+        updateThemeButton();
+        if(user) updateUI();
+        switchTab('home');
+    };
 
-        data.items.forEach(book => {
-            const info = book.volumeInfo;
-            const bId = book.id;
-            const div = document.createElement('div');
-            div.className = 'book-result';
-            div.innerHTML = `
-                <img src="${info.imageLinks?.smallThumbnail || ''}">
-                <div>
-                    <div style="font-weight:bold; font-size:14px;">${info.title}</div>
-                    <div style="font-size:12px; color:#777;">${info.authors?.[0] || 'Unknown'}</div>
-                </div>
-            `;
-            div.onclick = () => showBook(book);
-            resultsDiv.appendChild(div);
-        });
-    }
-
-    function showBook(book) {
-        currentBookId = book.id;
-        const info = book.volumeInfo;
-
-        // Update Center
-        document.getElementById('empty-state').style.display = 'none';
-        document.getElementById('detail-view').style.display = 'block';
-        document.getElementById('main-title').innerText = info.title;
-        document.getElementById('main-author').innerText = `By ${info.authors?.join(', ') || 'Unknown Author'}`;
-        document.getElementById('main-desc').innerText = info.description ? info.description.replace(/<[^>]*>/g, '') : "No description available.";
-        document.getElementById('main-cover').src = info.imageLinks?.thumbnail || '';
-
-        // Amazon Link
-        const amzUrl = `https://www.amazon.com/s?k=${encodeURIComponent(info.title + " book")}`;
-        document.getElementById('amazon-container').innerHTML = `<a href="${amzUrl}" target="_blank" class="amazon-btn">Buy on Amazon 🛒</a>`;
-
-        // Update Right Sidebar
-        document.getElementById('post-box').style.display = 'block';
-        loadForum(book.id);
-    }
-
-    async function loadForum(bId) {
-        const response = await fetch(`http://localhost:5000/reviews/${bId}`);
-        const data = await response.json();
+    // FIX: Changed to fetch from Google directly
+    async function performSearch(query = null) {
+        const q = query || document.getElementById('search-input').value;
+        if(!q) return;
+        const displayQ = q.replace('subject:', '').replace('author:', '');
         
-        document.getElementById('avg-rating').innerText = data.averageRating || "0.0";
-        document.getElementById('total-reviews').innerText = `${data.totalReviews || 0} Community Reviews`;
-
-        const container = document.getElementById('reviews-container');
-        container.innerHTML = "";
+        // UI logic to show results tab
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        const container = document.getElementById('dynamic-content');
+        container.innerHTML = `<h1 style="font-size:32px; margin-bottom:30px">Results for "${displayQ}"</h1><div id="search-grid" class="popular-grid"></div>`;
         
-        if (data.reviews && data.reviews.length > 0) {
-            data.reviews.forEach(r => {
-                const div = document.createElement('div');
-                div.className = 'review-card';
-                div.innerHTML = `
-                    <div style="font-weight:bold;">${r.username} <span class="stars">${'★'.repeat(r.rating)}</span></div>
-                    <div>${r.comment}</div>
-                `;
-                container.appendChild(div);
-            });
+        const grid = document.getElementById('search-grid');
+        grid.innerHTML = '<div class="loader"></div>';
+
+        try {
+            const res = await fetch(`${GOOGLE_API}?q=${encodeURIComponent(q)}&maxResults=20`);
+            const data = await res.json();
+            renderGrid(data.items, 'search-grid'); // Google returns "items"
+        } catch(err) { 
+            grid.innerHTML = '<p style="color:red">Error connecting to Book API. Please check your internet.</p>'; 
         }
     }
 
-    async function submitReview() {
-        const rating = document.getElementById('rev-rating').value;
-        const comment = document.getElementById('rev-comment').value;
-        const token = localStorage.getItem('token'); // Get from login
-
-        if(!token) return alert("Please Login!");
-
-        const response = await fetch('http://localhost:5000/reviews', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ googleBookId: currentBookId, rating, comment })
-        });
-
-        if(response.ok) { loadForum(currentBookId); } else { alert("Error Posting."); }
+    async function switchTab(tabId) {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        const tabEl = document.querySelector(`[data-tab="${tabId}"]`);
+        if(tabEl) tabEl.classList.add('active');
+        
+        document.getElementById('app').classList.remove('sidebar-open');
+        document.getElementById('right-panel').style.display = 'none';
+        
+        const container = document.getElementById('dynamic-content');
+        if(tabId === 'home') {
+            container.innerHTML = `<h1 style="font-size:32px; margin-bottom:30px">Recommended for You</h1><div id="home-grid" class="popular-grid"></div>`;
+            fetchBooks('subject:fiction', 'home-grid');
+        } else if (tabId === 'favorites') { renderUserList('favorites'); }
+        else if (tabId === 'mybooks') { renderUserList('reading'); }
     }
-</script>
 
+    async function fetchBooks(query, gridId) {
+    const grid = document.getElementById(gridId);
+    grid.innerHTML = '<div class="loader"></div>';
+
+    try {
+        const res = await fetch(
+            `${GOOGLE_API}?q=${encodeURIComponent(query)}&maxResults=12`
+        );
+        const data = await res.json();
+        renderGrid(data.items, gridId);
+    } catch (e) {
+        console.error(e);
+        grid.innerHTML = '<p style="color:red">Failed to load books.</p>';
+    }
+}
+
+
+    function renderGrid(books, gridId) {
+        const grid = document.getElementById(gridId);
+        if(!books || books.length === 0) { grid.innerHTML = 'No books found.'; return; }
+        grid.innerHTML = books.map(book => `
+            <div class="book-card" onclick='event.stopPropagation(); showDetail(${JSON.stringify(book).replace(/'/g, "&apos;")})'>
+                <img src="${book.volumeInfo.imageLinks?.thumbnail || 'https://via.placeholder.com/200x300'}" alt="cover">
+                <div class="title">${book.volumeInfo.title}</div>
+            </div>
+        `).join('');
+    }
+function isPublicDomain(info) {
+    if (!info.publishedDate) return false;
+    const year = parseInt(info.publishedDate.substring(0, 4));
+    return year && year < 1929; // Safe public domain cutoff
+}
+
+function safeLink(url) {
+    return url ? url : '#';
+}
+
+function showDetail(book) {
+    currentBook = book;
+    const info = book.volumeInfo;
+    const container = document.getElementById('dynamic-content');
+
+    document.getElementById('app').classList.add('sidebar-open');
+    document.getElementById('right-panel').style.display = 'flex';
+    document.querySelector('.main-content').scrollTop = 0;
+
+    const rating = info.averageRating || 0;
+    const stars = '★'.repeat(Math.round(rating)) + '☆'.repeat(5 - Math.round(rating));
+    const isPD = isPublicDomain(info);
+
+    const buyLinks = `
+        <div class="reference-row">
+            <a class="btn-secondary btn-amazon"
+               href="https://www.amazon.com/s?k=${encodeURIComponent(info.title)}"
+               target="_blank">Amazon</a>
+
+            <a class="btn-secondary btn-bn"
+               href="https://www.barnesandnoble.com/s/${encodeURIComponent(info.title)}"
+               target="_blank">Barnes & Noble</a>
+
+            <a class="btn-secondary btn-apple"
+               href="https://books.apple.com/us/search?term=${encodeURIComponent(info.title)}"
+               target="_blank">Apple Books</a>
+        </div>
+    `;
+
+    const readLinks = `
+        <div class="reference-row">
+            ${info.previewLink ? `
+            <a class="btn-secondary btn-google"
+               href="${info.previewLink}"
+               target="_blank">Google Preview</a>` : ''}
+
+            ${isPD ? `
+            <a class="btn-secondary btn-gutenberg"
+               href="https://www.gutenberg.org/ebooks/search/?query=${encodeURIComponent(info.title)}"
+               target="_blank">Project Gutenberg</a>` : ''}
+
+            <a class="btn-secondary btn-ol"
+               href="https://openlibrary.org/search?q=${encodeURIComponent(info.title)}"
+               target="_blank">Open Library</a>
+        </div>
+    `;
+
+    const learnLinks = `
+        <div class="reference-row">
+            <a class="btn-secondary btn-wiki"
+               href="https://en.wikipedia.org/wiki/Special:Search?search=${encodeURIComponent(info.title)}"
+               target="_blank">Wikipedia</a>
+
+            ${info.infoLink ? `
+            <a class="btn-secondary"
+               href="${info.infoLink}"
+               target="_blank">Publisher Info</a>` : ''}
+        </div>
+    `;
+
+    container.innerHTML = `
+        <button class="genre-chip" style="margin-bottom:30px" onclick="switchTab('home')">← EXPLORE</button>
+
+        <div style="display:flex; gap:60px; align-items:flex-start">
+            <div style="width:280px; text-align:center">
+                <img src="${info.imageLinks?.thumbnail || ''}" style="width:100%; border-radius:24px">
+                <div style="margin-top:20px; font-size:24px; color:#ffcc00">${stars}</div>
+<div style="font-size:14px; color:var(--text-dim); margin-top:8px">
+    ${book.volumeInfo.ratingsCount || 0} Ratings
+</div>
+</div>
+
+<div style="flex:1">
+    <h1 class="detail-title">${info.title}</h1>
+    <p class="detail-author">by ${info.authors?.join(', ') || 'Unknown Author'}</p>
+
+    <div class="desc-container">
+        <div id="desc-text" class="desc-text">
+            ${info.description || 'Summary unavailable.'}
+        </div>
+        ${info.description?.length > 300 ? `
+            <div id="read-more-btn" class="read-more-btn" onclick="toggleReadMore()">Read Full Summary</div>
+        ` : ''}
+    </div>
+
+    <div class="action-row">
+        <button class="btn-main btn-fav" id="fav-btn" onclick="toggleFavorite()">🤍 Favorite</button>
+        <button class="btn-main btn-amazon" onclick="addToLibrary()">📖 Add to Library</button>
+    </div>
+
+    <h3>Buy</h3>
+    ${buyLinks}
+
+    <h3 style="margin-top:25px">Read</h3>
+    ${readLinks}
+
+    <h3 style="margin-top:25px">Learn More</h3>
+    ${learnLinks}
+</div>
+</div>
+`;
+    updateDetailButtons();
+    renderComments();  
+}
+
+function handleAuth() {
+    const email = document.getElementById('authEmail').value;
+    const pass = document.getElementById('authPass').value;
+    
+    if(!email || !pass) return alert("Please fill all fields");
+
+    // SIMULATED BACKEND LOGIC
+    let users = JSON.parse(localStorage.getItem('bl_registered_users')) || [];
+    
+    if (authMode === 'signup') {
+        // Register logic
+        if (users.find(u => u.email === email)) return alert("User already exists!");
+        
+        const newUser = {
+            email: email.toLowerCase(),
+            password: pass,
+            username: email.split('@')[0],
+            favorites: [],
+            reading: []
+        };
+        
+        users.push(newUser);
+        localStorage.setItem('bl_registered_users', JSON.stringify(users));
+        alert("Account created! Please login now.");
+        toggleAuthMode();
+    } else {
+        // Login logic
+        const foundUser = users.find(u => u.email === email.toLowerCase() && u.password === pass);
+        
+        if (foundUser) {
+            user = foundUser;
+            token = "mock-jwt-token";
+            localStorage.setItem('bl_token', token);
+            localStorage.setItem('bl_user', JSON.stringify(foundUser));
+            alert("Login successful!");
+            location.reload();
+        } else {
+            alert("Invalid email or password. (Did you sign up first?)");
+        }
+    }
+}
+
+    function openAuth(e) {
+        if (e) e.stopPropagation();
+        document.getElementById('authModal').style.display = 'flex';
+    }
+    
+
+    function updateUI() {
+        const authUI = document.getElementById('auth-ui');
+        authUI.innerHTML = `
+            <button id="theme-toggle" class="btn-main btn-fav" style="padding:8px 12px; font-size:12px" onclick="toggleTheme()"> Dark</button>
+            <span style="font-weight:600; color:var(--primary)">u/${user.username}</span>
+            <button class="btn-main btn-fav" style="padding:8px 20px" onclick="logout()">LOGOUT</button>
+        `;
+        document.getElementById('tab-favorites').style.display = 'block';
+        document.getElementById('tab-mybooks').style.display = 'block';
+        updateThemeButton();
+    }
+
+    // FAVORITES FIX: Save to LocalStorage user object
+    function toggleFavorite() {
+        if(!user) return openAuth();
+        const id = currentBook.id;
+        const idx = user.favorites.indexOf(id);
+        
+        if(idx > -1) user.favorites.splice(idx, 1);
+        else user.favorites.push(id);
+        
+        localStorage.setItem('bl_user', JSON.stringify(user));
+        updateDetailButtons();
+    }
+
+    function addToLibrary() {
+        if(!user) return openAuth();
+        if(!user.reading.includes(currentBook.id)) {
+            user.reading.push(currentBook.id);
+            localStorage.setItem('bl_user', JSON.stringify(user));
+            alert("Added to Library!");
+        }
+    }
+
+    function updateDetailButtons() {
+        if(!user || !currentBook) return;
+        const isFav = user.favorites.includes(currentBook.id);
+        const btn = document.getElementById('fav-btn');
+        if(btn) btn.innerHTML = isFav ? '❤️ Unfavorite' : '🤍 Favorite';
+    }
+
+    async function renderUserList(type) {
+        const container = document.getElementById('dynamic-content');
+        container.innerHTML = `<h1 style="font-size:32px; margin-bottom:30px">${type === 'favorites' ? 'My Favorites' : 'My Library'}</h1><div id="user-grid" class="popular-grid"></div>`;
+        
+        const list = (type === 'favorites') ? user.favorites : user.reading;
+        const grid = document.getElementById('user-grid');
+
+        if(!list || list.length === 0) {
+            grid.innerHTML = '<p style="color:gray">Nothing here yet. Go explore some books!</p>';
+            return;
+        }
+
+        grid.innerHTML = '<div class="loader"></div>';
+        try {
+            const bookData = await Promise.all(list.map(id => fetch(`${GOOGLE_API}/${id}`).then(r => r.json())));
+            renderGrid(bookData, 'user-grid');
+        } catch (e) { grid.innerHTML = 'Error loading items.'; }
+    }
+
+    // Maintain existing UI functions
+    function toggleReadMore() {
+        const txt = document.getElementById('desc-text');
+        const btn = document.getElementById('read-more-btn');
+        const isExp = txt.classList.toggle('expanded');
+        btn.innerText = isExp ? 'Read Less' : 'Read Full Summary';
+    }
+
+    function logout() { localStorage.clear(); location.reload(); }
+    function closeAllPopups() { document.getElementById('authModal').style.display = 'none'; }
+    function toggleAuthMode() { authMode = authMode === 'login' ? 'signup' : 'login'; document.getElementById('authTitle').innerText = authMode; }
+    function toggleTheme() {
+        const current = document.documentElement.getAttribute('data-theme') || 'dark';
+        const newTheme = current === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', newTheme);
+        localStorage.setItem('bl_theme', newTheme);
+        updateThemeButton();
+    }
+    function updateThemeButton() {
+        const btn = document.getElementById('theme-toggle');
+        if (!btn) return;
+        btn.innerHTML = document.documentElement.getAttribute('data-theme') === 'light' ? ' Dark' : ' Light';
+    }
+    function loadTheme() {
+        const theme = localStorage.getItem('bl_theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', theme);
+    }
+    async function renderComments() { document.getElementById('comment-thread').innerHTML = '<p style="color:gray; font-size:12px">Login to a live server to enable global discussions.</p>'; }
+</script>
 </body>
 </html>

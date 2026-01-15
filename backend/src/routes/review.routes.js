@@ -31,7 +31,7 @@ router.post("/", auth, async (req, res) => {
   try {
     console.log("User from Token:", req.user); // Check if username is here
     console.log("Data from Postman:", req.body);
-    const { googleBookId, rating, comment } = req.body;
+    const { googleBookId, rating, review } = req.body;
 
     // Optional: Check if user already reviewed this book
     const existingReview = await Review.findOne({ 
@@ -48,7 +48,7 @@ router.post("/", auth, async (req, res) => {
       user: req.user.id,
       username: req.user.username || "Anonymous", // Ensure your JWT payload has username
       rating: req.body.rating,
-      comment: req.body.comment,
+      review: req.body.review,
     });
 
     await newReview.save();
