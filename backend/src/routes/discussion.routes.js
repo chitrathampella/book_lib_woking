@@ -20,33 +20,64 @@ router.post("/", async (req, res) => {
 
 router.get("/:bookId", async (req, res) => {
   const msgs = await Discussion.find({ bookId: req.params.bookId })
-    .sort({ createdAt: 1 })
+    .sort({ createdAt: -1 })
     .populate('replies')
-    .populate('voters', 'username'); // Include voter information
+    .lean();
   res.json(msgs);
 });
 
-router.post("/:id/vote", auth, async (req, res) => {
-  const { delta } = req.body;
+// Like a comment
+router.post("/:id/like", async (req, res) => {
+  const { username } = req.body;
+  if (!username) return res.status(400).json({ error: "Username required" });
+
   const discussion = await Discussion.findById(req.params.id);
+  if (!discussion) return res.status(404).json({ error: "Comment not found" });
 
-  if (!discussion) {
-    return res.status(404).json({ error: "Discussion not found" });
+  // Check if already liked
+  if (discussion.likers.includes(username)) {
+    // Remove like
+    discussion.likers = discussion.likers.filter(u => u !== username);
+    discussion.likes = Math.max(0, discussion.likes - 1);
+  } else {
+    // Add like and remove dislike if exists
+    discussion.likers.push(username);
+    discussion.likes += 1;
+    if (discussion.dislikers.includes(username)) {
+      discussion.dislikers = discussion.dislikers.filter(u => u !== username);
+      discussion.dislikes = Math.max(0, discussion.dislikes - 1);
+    }
   }
 
-  const userId = req.user.id;
-  const hasVoted = discussion.voters.includes(userId);
-
-  if (hasVoted) {
-    return res.status(400).json({ error: "You have already voted on this comment" });
-  }
-
-  // Add user to voters list and update vote count
-  discussion.voters.push(userId);
-  discussion.votes += delta;
   await discussion.save();
+  res.json({ likes: discussion.likes, dislikes: discussion.dislikes });
+});
 
-  res.json({ votes: discussion.votes });
+// Dislike a comment
+router.post("/:id/dislike", async (req, res) => {
+  const { username } = req.body;
+  if (!username) return res.status(400).json({ error: "Username required" });
+
+  const discussion = await Discussion.findById(req.params.id);
+  if (!discussion) return res.status(404).json({ error: "Comment not found" });
+
+  // Check if already disliked
+  if (discussion.dislikers.includes(username)) {
+    // Remove dislike
+    discussion.dislikers = discussion.dislikers.filter(u => u !== username);
+    discussion.dislikes = Math.max(0, discussion.dislikes - 1);
+  } else {
+    // Add dislike and remove like if exists
+    discussion.dislikers.push(username);
+    discussion.dislikes += 1;
+    if (discussion.likers.includes(username)) {
+      discussion.likers = discussion.likers.filter(u => u !== username);
+      discussion.likes = Math.max(0, discussion.likes - 1);
+    }
+  }
+
+  await discussion.save();
+  res.json({ likes: discussion.likes, dislikes: discussion.dislikes });
 });
 
 module.exports = router;

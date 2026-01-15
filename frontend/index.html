@@ -39,14 +39,16 @@
         body { font-family: 'Poppins', sans-serif; margin: 0; background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; }
         
         .app-container {
-            display: grid;
-            grid-template-columns: 1fr 0px; 
-            grid-template-rows: 90px 110px 1fr auto;
-            height: 100vh;
-            min-height: 100vh;
-        }
-        .app-container.sidebar-open { grid-template-columns: 1fr 420px; }
+    display: grid;
+    grid-template-columns: 1fr 0px; /* Default: Sidebar hidden */
+    grid-template-rows: 90px 110px 1fr auto;
+    height: 100vh;
+}
 
+/* 2. When sidebar is open, give main 1fr and sidebar 420px */
+.app-container.sidebar-open {
+    grid-template-columns: 1fr 420px; 
+}
         /* Top Nav */
         .top-nav {
             grid-column: 1 / -1; display: flex; align-items: center; padding: 0 50px;
@@ -78,7 +80,15 @@
         .genre-chip:hover { border-color: var(--primary); color: var(--text); background: #1a1a1a; }
 
         /* Main Content */
-        .main-content { padding: 40px 50px; overflow-y: auto; scroll-behavior: smooth; }
+       .main-content {
+    grid-column: 1; 
+    grid-row: 3;
+    padding: 40px 50px;
+    overflow-y: auto;
+    height: 100%;
+    -webkit-overflow-scrolling: touch;
+}
+
         .popular-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 35px; }
         
         .book-card { cursor: pointer; background: var(--card-bg); border: 1px solid var(--border); border-radius: 18px; padding: 15px; }
@@ -122,8 +132,82 @@
         .btn-gutenberg { background: var(--card-bg); color: var(--text); border-color: var(--border); }
         .btn-ol { background: var(--card-bg); color: var(--text); border-color: var(--border); }
 
-        /* Comments */
-        .sidebar-right { background: var(--panel); border-left: 1px solid var(--border); padding: 30px; display: none; flex-direction: column; }
+        .main-content {
+    transition: transform 0.35s cubic-bezier(.4,0,.2,1),
+                opacity 0.3s ease;
+}
+
+.app-container.sidebar-open .main-content {
+    transform: scale(0.985) translateX(-8px);
+    opacity: 0.95;
+}
+
+.detail-enter {
+    animation: detailIn 0.4s cubic-bezier(.4,0,.2,1);
+}
+
+@keyframes detailIn {
+    from {
+        opacity: 0;
+        transform: translateY(16px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.reddit-comment {
+    animation: commentFade 0.25s ease forwards;
+}
+
+@keyframes commentFade {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.3s ease forwards;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+
+        /* Update this section in your <style> */
+.sidebar-right {
+    grid-column: 2;
+    grid-row: 3;
+    background: var(--panel);
+    border-left: 1px solid var(--border);
+    padding: 20px;
+    display: none; /* JS will toggle this to flex */
+    flex-direction: column;
+    height: 100%;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    overflow: hidden;
+}
+
+/* When the sidebar is open */
+.app-container.sidebar-open .sidebar-right {
+    display: flex;
+    opacity: 1;
+}
+
+#right-panel {
+    min-width: 420px;
+    color: white !important;
+}
+
         .comment-node { border-left: 2px solid #222; padding-left: 15px; margin-bottom: 20px; }
         .user-tag { font-size: 12px; font-weight: 700; color: var(--primary); }
         .vote-arrow { cursor: pointer; font-size: 18px; color: var(--text-dim); }
@@ -155,6 +239,45 @@
         .auth-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(10px); }
         .auth-card { background: var(--panel); padding: 40px; border-radius: 24px; width: 400px; border: 1px solid var(--border); text-align: center; }
         .input-box { width: 100%; padding: 15px; margin-bottom: 15px; background: var(--card-bg); border: 1px solid var(--border); color: var(--text); border-radius: 12px; }
+    /* Ensure the sidebar content is always visible and white */
+#right-panel {
+    min-width: 350px; /* Prevents squashing */
+    color: white !important;
+    z-index: 100;
+}
+
+#comment-thread {
+    flex: 1;
+    overflow-y: auto; /* This must be auto to allow scrolling comments */
+    margin-bottom: 12px;
+    padding-right: 5px;
+}
+
+#comment-thread {
+    flex: 1;
+    overflow-y: auto; /* This must be auto to allow scrolling comments */
+    margin-bottom: 12px;
+    padding-right: 5px;
+}
+
+/* Make sure the text inside the sidebar stands out */
+.sidebar-right h2 {
+    color: var(--primary);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 10px;
+}
+
+/* FORCE hide when sidebar-open is NOT present */
+.app-container:not(.sidebar-open) .sidebar-right {
+    display: none !important;
+    width: 0 !important;
+    opacity: 0 !important;
+}
+
+/* Ensure main content takes back the full width immediately */
+.app-container:not(.sidebar-open) .main-content {
+    grid-column: 1 / -1; /* Stretch across all columns */
+}
     </style>
 </head>
 <body>
@@ -208,17 +331,17 @@
     </main>
 
     <aside class="sidebar-right" id="right-panel">
-        <h2 style="margin-top:0; font-size:24px">Discussion</h2>
-        <div id="comment-thread" style="flex:1; overflow-y:auto;"></div>
-        <div style="margin-top:20px; background:var(--card-bg); padding:20px; border-radius:15px">
-            <textarea id="comment-input" placeholder="Share your thoughts..." style="width:100%; background:transparent; border:none; color:white; font-size:14px; height:60px; resize:none; outline:none"></textarea>
-            <button onclick="postComment()" style="width:100%; margin-top:15px; padding:12px; background:var(--primary); color:white; border:none; border-radius:10px; font-weight:700; cursor:pointer;">Post Comment</button>
+        <h2 style="margin-top:0; font-size:18px; margin-bottom:10px">Discussion</h2>
+        <div id="comment-thread" style="flex:1; overflow-y:auto; min-height: 100px; margin-bottom: 12px; font-size: 13px;"></div>
+        <div style="background:var(--card-bg); padding:12px; border-radius:10px; flex-shrink: 0;">
+            <textarea id="comment-input" placeholder="Share your thoughts..." style="width:100%; background:transparent; border:none; color:white; font-size:12px; height:50px; resize:none; outline:none; padding: 5px 0;"></textarea>
+            <button onclick="postComment()" style="width:100%; margin-top:10px; padding:10px; background:var(--primary); color:white; border:none; border-radius:8px; font-weight:700; cursor:pointer; font-size: 13px;">Post</button>
         </div>
     </aside>
 
     <footer class="app-footer">
         <div class="footer-content">
-            <p>© 2026 BookLib. All rights reserved. | Powered by Google Books API</p>
+            <p>© 2026 BookLib. All rights reserved. | Powered by Google Books API. | Developed by Chitra</p>
         </div>
     </footer>
 </div>
@@ -240,6 +363,8 @@
 
     // FIX: Changed to fetch from Google directly
     async function performSearch(query = null) {
+        exitBookView();
+
         const q = query || document.getElementById('search-input').value;
         if(!q) return;
         const displayQ = q.replace('subject:', '').replace('author:', '');
@@ -255,28 +380,39 @@
         try {
             const res = await fetch(`${GOOGLE_API}?q=${encodeURIComponent(q)}&maxResults=20`);
             const data = await res.json();
-            renderGrid(data.items, 'search-grid'); // Google returns "items"
+            renderGrid(data.items, 'search-grid');
+            document.getElementById('search-grid').classList.add('fade-in'); // Google returns "items"
         } catch(err) { 
             grid.innerHTML = '<p style="color:red">Error connecting to Book API. Please check your internet.</p>'; 
         }
     }
 
     async function switchTab(tabId) {
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        const tabEl = document.querySelector(`[data-tab="${tabId}"]`);
-        if(tabEl) tabEl.classList.add('active');
-        
-        document.getElementById('app').classList.remove('sidebar-open');
-        document.getElementById('right-panel').style.display = 'none';
-        
-        const container = document.getElementById('dynamic-content');
-        if(tabId === 'home') {
-            container.innerHTML = `<h1 style="font-size:32px; margin-bottom:30px">Recommended for You</h1><div id="home-grid" class="popular-grid"></div>`;
-            fetchBooks('subject:fiction', 'home-grid');
-        } else if (tabId === 'favorites') { renderUserList('favorites'); }
-        else if (tabId === 'mybooks') { renderUserList('reading'); }
-    }
+    // ALWAYS close the book view first when changing tabs
+    exitBookView();
 
+    // Reset layout state
+    const app = document.getElementById('app');
+    app.classList.remove('sidebar-open');
+
+    // Update Tab UI
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    const activeTab = document.querySelector(`[data-tab="${tabId}"]`);
+    if (activeTab) activeTab.classList.add('active');
+
+    const container = document.getElementById('dynamic-content');
+    container.innerHTML = '';
+
+    // Load content
+    if (tabId === 'home') {
+        container.innerHTML = `<h1 style="font-size:32px; margin-bottom:30px">Recommended for You</h1><div id="home-grid" class="popular-grid"></div>`;
+        fetchBooks('subject:fiction', 'home-grid');
+    } else if (tabId === 'favorites') {
+        renderUserList('favorites');
+    } else if (tabId === 'mybooks') {
+        renderUserList('reading');
+    }
+}
     async function fetchBooks(query, gridId) {
     const grid = document.getElementById(gridId);
     grid.innerHTML = '<div class="loader"></div>';
@@ -287,6 +423,11 @@
         );
         const data = await res.json();
         renderGrid(data.items, gridId);
+
+         grid.classList.remove('fade-in');
+        void grid.offsetWidth; // force reflow
+        grid.classList.add('fade-in');
+
     } catch (e) {
         console.error(e);
         grid.innerHTML = '<p style="color:red">Failed to load books.</p>';
@@ -303,6 +444,10 @@
                 <div class="title">${book.volumeInfo.title}</div>
             </div>
         `).join('');
+
+        grid.classList.remove('fade-in');
+        void grid.offsetWidth; // force reflow
+grid.classList.add('fade-in');
     }
 function isPublicDomain(info) {
     if (!info.publishedDate) return false;
@@ -318,19 +463,27 @@ function showDetail(book) {
     currentBook = book;
     const info = book.volumeInfo;
     const container = document.getElementById('dynamic-content');
+    const app = document.getElementById('app');
+    const panel = document.getElementById('right-panel');
 
-    document.getElementById('app').classList.add('sidebar-open');
-    document.getElementById('right-panel').style.display = 'flex';
+    // 1. Trigger Layout Change
+    app.classList.add('sidebar-open');
+    panel.style.display = 'flex'; 
+    // Small delay to allow 'display: flex' to register before fading in
+    setTimeout(() => panel.style.opacity = '1', 10); 
+    
     document.querySelector('.main-content').scrollTop = 0;
 
+    // 2. Metadata Logic
     const rating = info.averageRating || 0;
     const stars = '★'.repeat(Math.round(rating)) + '☆'.repeat(5 - Math.round(rating));
     const isPD = isPublicDomain(info);
 
+    // 3. Link Generation Logic
     const buyLinks = `
         <div class="reference-row">
             <a class="btn-secondary btn-amazon"
-               href="https://www.amazon.com/s?k=${encodeURIComponent(info.title)}"
+               href="https://www.amazon.com/s?k=${encodeURIComponent(info.title + " " + (info.authors?.[0] || ""))}"
                target="_blank">Amazon</a>
 
             <a class="btn-secondary btn-bn"
@@ -374,47 +527,57 @@ function showDetail(book) {
         </div>
     `;
 
+    // 4. Render Main Content
     container.innerHTML = `
-        <button class="genre-chip" style="margin-bottom:30px" onclick="switchTab('home')">← EXPLORE</button>
-
-        <div style="display:flex; gap:60px; align-items:flex-start">
-            <div style="width:280px; text-align:center">
-                <img src="${info.imageLinks?.thumbnail || ''}" style="width:100%; border-radius:24px">
+        <button class="genre-chip" style="margin-bottom:30px" onclick="exitBookView(); switchTab('home')">← EXPLORE</button>
+        
+        <div class="detail-wrapper" style="display:flex; gap:60px; align-items:flex-start">
+            <!-- Left Side: Cover & Stats -->
+            <div style="width:280px; flex-shrink:0; text-align:center">
+                <img src="${info.imageLinks?.thumbnail || 'https://via.placeholder.com/280x400?text=No+Cover'}" 
+                     style="width:100%; border-radius:24px; box-shadow: 0 20px 40px rgba(0,0,0,0.5)">
                 <div style="margin-top:20px; font-size:24px; color:#ffcc00">${stars}</div>
-<div style="font-size:14px; color:var(--text-dim); margin-top:8px">
-    ${book.volumeInfo.ratingsCount || 0} Ratings
-</div>
-</div>
+                <div style="font-size:14px; color:var(--text-dim); margin-top:8px">
+                    ${book.volumeInfo.ratingsCount || 0} Ratings
+                </div>
+            </div>
 
-<div style="flex:1">
-    <h1 class="detail-title">${info.title}</h1>
-    <p class="detail-author">by ${info.authors?.join(', ') || 'Unknown Author'}</p>
+            <!-- Right Side: Text & Actions -->
+            <div style="flex:1">
+                <h1 class="detail-title" style="font-size: 56px; margin-bottom:10px">${info.title}</h1>
+                <p class="detail-author" style="font-size: 24px; margin-bottom:30px">${info.authors?.join(', ') || 'Unknown Author'}</p>
 
-    <div class="desc-container">
-        <div id="desc-text" class="desc-text">
-            ${info.description || 'Summary unavailable.'}
+                <div class="desc-container" style="max-width:100%">
+                    <div id="desc-text" class="desc-text">
+                        ${info.description || 'Summary unavailable for this title.'}
+                    </div>
+                    ${(info.description && info.description.length > 300) ? `
+                        <div id="read-more-btn" class="read-more-btn" onclick="toggleReadMore()">Read Full Summary</div>
+                    ` : ''}
+                </div>
+
+                <div class="action-row">
+                    <button class="btn-main btn-fav" id="fav-btn" onclick="toggleFavorite()">🤍 Favorite</button>
+                    <button class="btn-main btn-amazon" onclick="addToLibrary()">📖 Add to Library</button>
+                </div>
+
+                <h3 style="margin-top:40px; font-size:16px; color:var(--primary)">Get a Copy</h3>
+                ${buyLinks}
+
+                <h3 style="margin-top:25px; font-size:16px; color:var(--primary)">Digital Reading</h3>
+                ${readLinks}
+
+                <h3 style="margin-top:25px; font-size:16px; color:var(--primary)">Background & Info</h3>
+                ${learnLinks}
+            </div>
         </div>
-        ${info.description?.length > 300 ? `
-            <div id="read-more-btn" class="read-more-btn" onclick="toggleReadMore()">Read Full Summary</div>
-        ` : ''}
-    </div>
+    `;
 
-    <div class="action-row">
-        <button class="btn-main btn-fav" id="fav-btn" onclick="toggleFavorite()">🤍 Favorite</button>
-        <button class="btn-main btn-amazon" onclick="addToLibrary()">📖 Add to Library</button>
-    </div>
+    // 5. Trigger Entrance Animation
+    const detail = container.querySelector('.detail-wrapper');
+    detail?.classList.add('detail-enter');
 
-    <h3>Buy</h3>
-    ${buyLinks}
-
-    <h3 style="margin-top:25px">Read</h3>
-    ${readLinks}
-
-    <h3 style="margin-top:25px">Learn More</h3>
-    ${learnLinks}
-</div>
-</div>
-`;
+    // 6. Refresh Sidebar Data
     updateDetailButtons();
     renderComments();  
 }
@@ -554,7 +717,217 @@ function handleAuth() {
         const theme = localStorage.getItem('bl_theme') || 'dark';
         document.documentElement.setAttribute('data-theme', theme);
     }
-    async function renderComments() { document.getElementById('comment-thread').innerHTML = '<p style="color:gray; font-size:12px">Login to a live server to enable global discussions.</p>'; }
+    async function postComment() {
+    if (!currentBook) return;
+    if (!user) return openAuth();
+    
+    const input = document.getElementById('comment-input');
+    const text = input.value.trim();
+    if (!text) return;
+    
+    const newComment = {
+        _id: 'local_' + Date.now(),
+        bookId: currentBook.id,
+        user: user.username,
+        text: text,
+        likes: 0,
+        createdAt: new Date().toISOString(),
+        replies: []
+    };
+
+    try {
+        // Try server first
+        await fetch('http://localhost:5001/discussions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newComment)
+        });
+    } catch (e) {
+        // Save to LocalStorage if server fails
+        const localKey = `comments_${currentBook.id}`;
+        const existing = JSON.parse(localStorage.getItem(localKey)) || [];
+        existing.push(newComment);
+        localStorage.setItem(localKey, JSON.stringify(existing));
+    }
+
+    input.value = '';
+    renderComments(); // Refresh view
+}
+
+    async function replyToComment(parentId) {
+        if (!currentBook) return;
+        if (!user) return openAuth();
+        
+        const thread = document.getElementById('comment-thread');
+        const existingReplyBox = document.getElementById(`reply-box-${parentId}`);
+        
+        if (existingReplyBox) {
+            existingReplyBox.remove();
+            return;
+        }
+        
+        const replyBox = document.createElement('div');
+        replyBox.id = `reply-box-${parentId}`;
+        replyBox.style.cssText = 'margin: 12px 0; padding: 12px; background: #111; border-radius: 8px; border: 1px solid #222;';
+        replyBox.innerHTML = `
+            <textarea id="reply-input-${parentId}" placeholder="Write your reply..." style="width: 100%; height: 70px; background: transparent; border: 1px solid #333; border-radius: 6px; color: white; padding: 10px; font-size: 14px; font-family: Poppins; resize: none; outline: none;"></textarea>
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <button onclick="postReply('${parentId}')" style="flex: 1; padding: 8px; background: var(--primary); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Post Reply</button>
+                <button onclick="document.getElementById('reply-box-${parentId}').remove()" style="flex: 1; padding: 8px; background: #222; color: #888; border: none; border-radius: 6px; cursor: pointer;">Cancel</button>
+            </div>
+        `;
+        
+        const commentElement = document.querySelector(`[data-comment-id="${parentId}"]`);
+        if (commentElement) {
+            commentElement.appendChild(replyBox);
+            document.getElementById(`reply-input-${parentId}`).focus();
+        }
+    }
+
+    async function postReply(parentId) {
+        if (!user) return openAuth();
+        
+        const replyInput = document.getElementById(`reply-input-${parentId}`);
+        const replyText = replyInput.value.trim();
+        if (!replyText) return alert('Please write a reply');
+        
+        try {
+            const res = await fetch('http://localhost:5001/discussions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    bookId: currentBook.id,
+                    user: user.username,
+                    text: replyText,
+                    parentId: parentId
+                })
+            });
+            if (!res.ok) throw new Error('Failed to post reply');
+            renderComments();
+        } catch (e) {
+            alert('Error posting reply: ' + e.message);
+        }
+    }
+
+    async function toggleLike(commentId) {
+        if (!currentBook) return;
+        if (!user) return openAuth();
+        
+        try {
+            const res = await fetch(`http://localhost:5001/discussions/${commentId}/like`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: user.username })
+            });
+            if (!res.ok) throw new Error('Failed to like');
+            renderComments();
+        } catch (e) {
+            alert('Error: ' + e.message);
+        }
+    }
+
+    async function toggleDislike(commentId) {
+        if (!currentBook) return;
+        if (!user) return openAuth();
+        
+        try {
+            const res = await fetch(`http://localhost:5001/discussions/${commentId}/dislike`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: user.username })
+            });
+            if (!res.ok) throw new Error('Failed to dislike');
+            renderComments();
+        } catch (e) {
+            alert('Error: ' + e.message);
+        }
+    }
+
+    function renderCommentNode(comment) {
+        const liked = user && comment.likers && comment.likers.includes(user.username);
+        const disliked = user && comment.dislikers && comment.dislikers.includes(user.username);
+        
+        return `
+            <div class="reddit-comment" data-comment-id="${comment._id}" style="border-left: 2px solid #333; padding-left: 12px; margin: 12px 0; padding: 12px; background: #0a0a0a; border-radius: 8px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <span style="font-weight: 600; color: var(--primary);">u/${comment.user}</span>
+                    <span style="color: #666; font-size: 12px;">${new Date(comment.createdAt).toLocaleDateString()}</span>
+                </div>
+                <p style="margin: 8px 0; line-height: 1.5; color: #fff;">${comment.text}</p>
+                
+                <div style="display: flex; gap: 16px; align-items: center; margin-top: 10px; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 4px; background: #111; padding: 6px 10px; border-radius: 6px; border: 1px solid #222;">
+                        <button onclick="toggleLike('${comment._id}')" style="background: none; border: none; cursor: pointer; font-size: 14px; color: ${liked ? 'var(--accent)' : '#666'}; padding: 0;">👍 ${comment.likes || 0}</button>
+                        <span style="color: #444;">|</span>
+                        <button onclick="toggleDislike('${comment._id}')" style="background: none; border: none; cursor: pointer; font-size: 14px; color: ${disliked ? '#ff6b6b' : '#666'}; padding: 0;">👎 ${comment.dislikes || 0}</button>
+                    </div>
+                    <button onclick="replyToComment('${comment._id}')" style="background: none; border: none; cursor: pointer; color: #888; font-size: 12px; padding: 0;"> Reply</button>
+                </div>
+                
+                ${comment.replies && comment.replies.length > 0 ? `
+                    <div style="margin-top: 12px; margin-left: 12px; border-left: 1px solid #222; padding-left: 12px;">
+                        ${comment.replies.map(reply => renderCommentNode(reply)).join('')}
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }
+function exitBookView() {
+    currentBook = null;
+    const app = document.getElementById('app');
+    const panel = document.getElementById('right-panel');
+
+    // 1. Remove the layout class immediately
+    app.classList.remove('sidebar-open');
+    
+    // 2. Hard-hide the panel
+    panel.style.display = 'none';
+    panel.style.opacity = '0';
+
+    // 3. Clear the content so it doesn't "ghost" when you open the next book
+    document.getElementById('comment-thread').innerHTML = '';
+    const commentInput = document.getElementById('comment-input');
+    if (commentInput) commentInput.value = '';
+
+    // 4. Reset Scroll Position of main view
+    document.getElementById('main-view').scrollTop = 0;
+}
+async function renderComments() {
+    const thread = document.getElementById('comment-thread');
+    if (!currentBook) return;
+
+    // Show a small loader while we check
+    thread.innerHTML = '<div class="loader" style="width:20px; height:20px; margin:20px auto;"></div>';
+
+    try {
+        // 1. Try to fetch from server
+        const res = await fetch(`http://localhost:5001/discussions/${currentBook.id}`);
+        if (!res.ok) throw new Error();
+        const comments = await res.json();
+        
+        if (!comments || comments.length === 0) {
+            thread.innerHTML = '<p style="color:gray; font-size:12px; text-align: center; padding: 20px;">No discussions yet. Be the first to share! 👇</p>';
+        } else {
+            thread.innerHTML = comments.filter(c => !c.parentId).map(c => renderCommentNode(c)).join('');
+        }
+    } catch (e) {
+        // 2. FALLBACK: Load from LocalStorage if server is down
+        console.log("Backend offline, loading local discussions...");
+        const localData = JSON.parse(localStorage.getItem(`comments_${currentBook.id}`)) || [];
+        
+        if (localData.length === 0) {
+            thread.innerHTML = '<p style="color:var(--text-dim); font-size:12px; text-align: center; padding: 20px;">(Offline Mode)<br>No local discussions yet.</p>';
+        } else {
+            thread.innerHTML = localData.map(c => renderCommentNode(c)).join('');
+        }
+    }
+}
+
+
+
+    
+        
+
 </script>
 </body>
 </html>
